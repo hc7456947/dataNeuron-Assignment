@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resizable Components</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+    }
+    .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* Set container height to fill viewport */
+    }
+    .component {
+        border: 3px solid black;
+        overflow: hidden;
+        box-sizing: border-box;
+        position: relative;
+    }
+    .resizer {
+        width: 10px;
+        height: 10px;
+        background-color: #000;
+        position: absolute;
+    }
+    .resizer.top-left {
+        cursor: nwse-resize;
+        top: 0;
+        left: 0;
+    }
+    .resizer.top-right {
+        cursor: nesw-resize;
+        top: 0;
+        right: 0;
+    }
+    .resizer.bottom-left {
+        cursor: nesw-resize;
+        bottom: 0;
+        left: 0;
+    }
+    .resizer.bottom-right {
+        cursor: nwse-resize;
+        bottom: 0;
+        right: 0;
+    }
+    .content {
+        padding: 10px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .top {
+        display: flex;
+    }
+</style>
+</head>
+<body>
+
+<!-- Container for resizable components -->
+<div class="container">
+    <!-- Top row components -->
+    <div class="top">
+        <!-- Component 1 -->
+        <div class="component" id="component1" style="width: 40vw; height: 60vh;">
+            <div class="content">
+                <h1>Component 1</h1>
+            </div>
+            <!-- Resizers for component 1 -->
+            <div class="resizer top-left"></div>
+            <div class="resizer top-right"></div>
+            <div class="resizer bottom-left"></div>
+            <div class="resizer bottom-right"></div>
+        </div>
+        <!-- Component 2 -->
+        <div class="component" id="component2" style="width: 60vw; height: 60vh;">
+            <div class="content">
+                <h1>Component 2</h1>
+            </div>
+            <!-- Resizers for component 2 -->
+            <div class="resizer top-left"></div>
+            <div class="resizer top-right"></div>
+            <div class="resizer bottom-left"></div>
+            <div class="resizer bottom-right"></div>
+        </div>
+    </div>
+    <!-- Component 3 -->
+    <div class="component" id="component3" style="width: 100vw; height: 40vh;">
+        <div class="content">
+            <h1>Component 3</h1>
+        </div>
+        <!-- Resizers for component 3 -->
+        <div class="resizer top-left"></div>
+        <div class="resizer top-right"></div>
+        <div class="resizer bottom-left"></div>
+        <div class="resizer bottom-right"></div>
+    </div>
+</div>
+
+<script>
+    // Add event listeners for each component and its resizers
+    document.querySelectorAll('.component').forEach(function(element) {
+        let startX, startY, startWidth, startHeight;
+        let startPrevWidth, startNextWidth;
+        let prevElement, nextElement;
+
+        const resizers = element.querySelectorAll('.resizer');
+        resizers.forEach(function(resizer) {
+            resizer.addEventListener('mousedown', function(event) {
+                startX = event.clientX;
+                startY = event.clientY;
+                startWidth = element.offsetWidth;
+                startHeight = element.offsetHeight;
+
+                prevElement = element.previousElementSibling;
+                nextElement = element.nextElementSibling;
+
+                startPrevWidth = prevElement ? prevElement.offsetWidth : 0;
+                startNextWidth = nextElement ? nextElement.offsetWidth : 0;
+
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+            });
+
+            function mouseMoveHandler(event) {
+                const deltaX = event.clientX - startX;
+                const deltaY = event.clientY - startY;
+
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                // Adjust width and height based on mouse movement
+                let newWidth = startWidth + deltaX;
+                let newHeight = startHeight + deltaY;
+
+                // Check if resizing exceeds viewport boundaries
+                if (newWidth > viewportWidth) {
+                    newWidth = viewportWidth;
+                }
+                if (newHeight > viewportHeight) {
+                    newHeight = viewportHeight;
+                }
+
+                // Update component dimensions and position
+                if (resizer.classList.contains('bottom-right')) {
+                    element.style.width = (newWidth / viewportWidth) * 100 + 'vw';
+                    element.style.height = (newHeight / viewportHeight) * 100 + 'vh';
+                } else if (resizer.classList.contains('bottom-left')) {
+                    if (newWidth > 0) {
+                        element.style.width = (newWidth / viewportWidth) * 100 + 'vw';
+                    }
+                    element.style.height = (newHeight / viewportHeight) * 100 + 'vh';
+                } else if (resizer.classList.contains('top-right')) {
+                    if (newHeight > 0) {
+                        element.style.height = (newHeight / viewportHeight) * 100 + 'vh';
+                    }
+                    element.style.width = (newWidth / viewportWidth) * 100 + 'vw';
+                    element.style.top = (deltaY / viewportHeight) * 100 + 'vh';
+                } else if (resizer.classList.contains('top-left')) {
+                    if (newWidth > 0) {
+                        element.style.width = (newWidth / viewportWidth) * 100 + 'vw';
+                        element.style.left = (event.clientX / viewportWidth) * 100 + 'vw';
+                    }
+                    if (newHeight > 0) {
+                        element.style.height = (newHeight / viewportHeight) * 100 + 'vh';
+                        element.style.top = (event.clientY / viewportHeight) * 100 + 'vh';
+                    }
+                }
+
+                // Adjust neighboring component widths
+                if (prevElement && startPrevWidth !== undefined && startNextWidth !== undefined) {
+                    const totalWidth = element.offsetWidth + startPrevWidth + startNextWidth;
+                    const percentagePrev = (startPrevWidth / totalWidth) * 100;
+                    const percentageNext = (startNextWidth / totalWidth) * 100;
+
+                    prevElement.style.width = percentagePrev + '%';
+                    nextElement.style.width = percentageNext + '%';
+                }
+            }
+
+            function mouseUpHandler() {
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+            }
+        });
+    });
+</script>
+</body>
+</html>
